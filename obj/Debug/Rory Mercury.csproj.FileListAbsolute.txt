@@ -1,0 +1,15 @@
+D:\Rabotka\Rory Mercury\bin\Debug\Rory Mercury.exe.config
+D:\Rabotka\Rory Mercury\bin\Debug\Rory Mercury.exe
+D:\Rabotka\Rory Mercury\bin\Debug\Rory Mercury.pdb
+D:\Rabotka\Rory Mercury\bin\Debug\Newtonsoft.Json.dll
+D:\Rabotka\Rory Mercury\bin\Debug\Telegram.Bot.dll
+D:\Rabotka\Rory Mercury\bin\Debug\Newtonsoft.Json.xml
+D:\Rabotka\Rory Mercury\bin\Debug\Telegram.Bot.xml
+D:\Rabotka\Rory Mercury\obj\Debug\Rory Mercury.csprojAssemblyReference.cache
+D:\Rabotka\Rory Mercury\obj\Debug\Rory_Mercury.Form1.resources
+D:\Rabotka\Rory Mercury\obj\Debug\Rory_Mercury.Properties.Resources.resources
+D:\Rabotka\Rory Mercury\obj\Debug\Rory Mercury.csproj.GenerateResource.cache
+D:\Rabotka\Rory Mercury\obj\Debug\Rory Mercury.csproj.CoreCompileInputs.cache
+D:\Rabotka\Rory Mercury\obj\Debug\Rory Mercury.csproj.CopyComplete
+D:\Rabotka\Rory Mercury\obj\Debug\Rory Mercury.exe
+D:\Rabotka\Rory Mercury\obj\Debug\Rory Mercury.pdb
