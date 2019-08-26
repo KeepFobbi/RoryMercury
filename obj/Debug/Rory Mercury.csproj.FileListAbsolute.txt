@@ -13,3 +13,20 @@ D:\Rabotka\Rory Mercury\obj\Debug\Rory Mercury.csproj.CoreCompileInputs.cache
 D:\Rabotka\Rory Mercury\obj\Debug\Rory Mercury.csproj.CopyComplete
 D:\Rabotka\Rory Mercury\obj\Debug\Rory Mercury.exe
 D:\Rabotka\Rory Mercury\obj\Debug\Rory Mercury.pdb
+D:\Rabotka\RoryMercury\bin\Debug\Rory Mercury.exe.config
+D:\Rabotka\RoryMercury\bin\Debug\Rory Mercury.exe
+D:\Rabotka\RoryMercury\bin\Debug\Rory Mercury.pdb
+D:\Rabotka\RoryMercury\bin\Debug\Newtonsoft.Json.dll
+D:\Rabotka\RoryMercury\bin\Debug\Telegram.Bot.dll
+D:\Rabotka\RoryMercury\bin\Debug\Newtonsoft.Json.xml
+D:\Rabotka\RoryMercury\bin\Debug\Telegram.Bot.xml
+D:\Rabotka\RoryMercury\obj\Debug\Rory Mercury.csprojAssemblyReference.cache
+D:\Rabotka\RoryMercury\obj\Debug\Rory_Mercury.Authorization.resources
+D:\Rabotka\RoryMercury\obj\Debug\Rory_Mercury.Properties.Resources.resources
+D:\Rabotka\RoryMercury\obj\Debug\Rory Mercury.csproj.GenerateResource.cache
+D:\Rabotka\RoryMercury\obj\Debug\Rory Mercury.csproj.CoreCompileInputs.cache
+D:\Rabotka\RoryMercury\obj\Debug\Rory Mercury.csproj.CopyComplete
+D:\Rabotka\RoryMercury\obj\Debug\Rory Mercury.exe
+D:\Rabotka\RoryMercury\obj\Debug\Rory Mercury.pdb
+D:\Rabotka\RoryMercury\obj\Debug\Rory_Mercury.LoginKey.resources
+D:\Rabotka\RoryMercury\obj\Debug\Rory_Mercury.Main.resources

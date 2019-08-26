@@ -12,11 +12,11 @@ using System.Text.RegularExpressions;
 
 namespace Rory_Mercury
 {
-    public partial class Form1 : Form
+    public partial class Main : Form
     {
         private static readonly TelegramBotClient Bot = new TelegramBotClient("956177251:AAE65NwO-j2Rf8H_J70FiSew4gaCgOT0yyc");
-        private static string globalPath;
         private static string UserMessage;
+        private static string globalPath;
         private static Telegram.Bot.Types.Message message;
         private static bool musicFlag = false;
         private static bool backgroundFlag = false;
@@ -34,7 +34,7 @@ namespace Rory_Mercury
         [DllImport("user32.dll")]
         public static extern IntPtr SendMessageW(IntPtr hWnd, int Msg, IntPtr wParam, IntPtr lParam);
 
-        public Form1()
+        public Main()
         {
             InitializeComponent();
             globalPath = AppDomain.CurrentDomain.BaseDirectory;
@@ -172,6 +172,7 @@ namespace Rory_Mercury
         private void Form1_FormClosed(object sender, FormClosedEventArgs e)
         {
             Bot.StopReceiving();
+            Application.Exit();
         }
     }
 }
