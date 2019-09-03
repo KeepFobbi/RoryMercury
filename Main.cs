@@ -9,15 +9,17 @@ using Telegram.Bot.Args;
 using Telegram.Bot.Types.Enums;
 using System.Net;
 using System.Text.RegularExpressions;
+using Telegram.Bot.Types.ReplyMarkups;
+using System.Threading.Tasks;
 
 namespace Rory_Mercury
 {
     public partial class Main : Form
     {
-        private static readonly TelegramBotClient Bot = new TelegramBotClient("956177251:AAE65NwO-j2Rf8H_J70FiSew4gaCgOT0yyc");
+        protected static readonly TelegramBotClient Bot = new TelegramBotClient("956177251:AAE65NwO-j2Rf8H_J70FiSew4gaCgOT0yyc");
+        protected static Telegram.Bot.Types.Message message;
         private static string UserMessage;
         private static string globalPath;
-        private static Telegram.Bot.Types.Message message;
         private static bool musicFlag = false;
         private static bool backgroundFlag = false;
 
@@ -43,7 +45,7 @@ namespace Rory_Mercury
 
             Bot.OnMessage += BotOnMessageReceived;
             Bot.OnMessageEdited += BotOnMessageReceived;
-
+            Bot.OnCallbackQuery += BotOnCallbackQueryReceived;
 
             Bot.StartReceiving(Array.Empty<UpdateType>());
         }
@@ -57,6 +59,7 @@ namespace Rory_Mercury
             {
                 uploadPhotoDesktop(messageEventArgs);
                 backgroundFlag = false;
+                startMenu();
             }
             else if (message == null || type != MessageType.Text)
                 return;
@@ -64,23 +67,13 @@ namespace Rory_Mercury
             UserMessage = message.Text;
 
             if (UserMessage == "/start")
-                await Bot.SendTextMessageAsync(message.Chat.Id, $"Привет, {message.Chat.FirstName}. Меня зовут {Bot.GetMeAsync().Result.FirstName}");
+            {
+                await Bot.SendChatActionAsync(message.Chat.Id, ChatAction.Typing);
 
-            else if (UserMessage == "/off")
-                stateMachine("-s");
+                await Task.Delay(500); // simulate longer running task
 
-            else if (UserMessage == "/restart")
-                stateMachine("-r");
-
-            else if (UserMessage == "/mute")
-                changeVolume(APPCOMMAND_VOLUME_MUTE);
-
-            else if (UserMessage == "/volup")
-                changeVolume(APPCOMMAND_VOLUME_UP);
-
-            else if (UserMessage == "/voldown")
-                changeVolume(APPCOMMAND_VOLUME_DOWN);
-
+                startMenu();
+            }
             else if (musicFlag == true)
             {
                 WebClient webClient = new WebClient();
@@ -90,28 +83,135 @@ namespace Rory_Mercury
                 MatchCollection match = regex.Matches(reader.ReadToEnd());
 
                 System.Diagnostics.Process.Start($"https://www.youtube.com{match[66].Groups[1]}");
-                // включить видео
                 musicFlag = false;
+                startMenu();
             }
+        }
 
-            else if(UserMessage == "/open" && musicFlag == false)
-            {
-                musicFlag = true;
-                await Bot.SendTextMessageAsync(message.Chat.Id, "Введи название песни:");
-                return;       
-            }
+        private async void BotOnCallbackQueryReceived(object sender, CallbackQueryEventArgs callbackQueryEventArgs)
+        {
+            var callbackQuery = callbackQueryEventArgs.CallbackQuery;
 
-            else if (UserMessage == "/change")
-            {
-                backgroundFlag = true;
-                await Bot.SendTextMessageAsync(message.Chat.Id, "Отправь фото как документ и оно установиться на твоем рабочем столе.");
-            }
+            //await Bot.AnswerCallbackQueryAsync(callbackQuery.Id, $"в процессе: '{callbackQuery.Data}'");
 
-            else if (UserMessage == "/screen")
+            //await Bot.SendTextMessageAsync(callbackQuery.Message.Chat.Id, $"ку 2 {callbackQuery.Data}");
+
+            if (callbackQuery.Data == "Сделать скрин")
             {
                 Directory.CreateDirectory("Screen");
                 screenAsync(globalPath + "Screen");
+                startMenu();
             }
+
+            else if (callbackQuery.Data == "Mute")
+                changeVolume(APPCOMMAND_VOLUME_MUTE);
+
+            else if (callbackQuery.Data == "Добавить")
+                changeVolume(APPCOMMAND_VOLUME_UP);
+
+            else if (callbackQuery.Data == "Убавить")
+                changeVolume(APPCOMMAND_VOLUME_DOWN);
+
+            else if (callbackQuery.Data == "Выкл.")
+                stateMachine("-s");
+
+            else if (callbackQuery.Data == "Рестарт")
+                stateMachine("-r");
+
+            else if (callbackQuery.Data == "Звук")
+            {
+
+                if (!Bot.DeleteMessageAsync(message.Chat.Id, message.MessageId + 1).IsCompleted)
+                {
+                    var inlineKeyboard = new InlineKeyboardMarkup(new[]
+                {
+                        new [] // first row
+                        {
+                            InlineKeyboardButton.WithCallbackData("Добавить"),
+                        },
+                        new [] // second row
+                        {
+                            InlineKeyboardButton.WithCallbackData("Убавить"),
+                        },
+                        new []
+                        {
+                            InlineKeyboardButton.WithCallbackData("Mute")
+                        },
+                        new []
+                        {
+                            InlineKeyboardButton.WithCallbackData("back")
+                        }
+                    });
+
+                    await Bot.SendTextMessageAsync(message.Chat.Id, "Что вы хотите сделать?", replyMarkup: inlineKeyboard);
+                }
+
+            }
+
+            else if (callbackQuery.Data == "Сост. машины")
+            {
+                if (!Bot.DeleteMessageAsync(message.Chat.Id, message.MessageId + 1).IsCompleted)
+                {
+                    var inlineKeyboard2 = new InlineKeyboardMarkup(new[]
+                {
+                        new [] // first row
+                        {
+                            InlineKeyboardButton.WithCallbackData("Выкл."),
+                        },
+                        new [] // second row
+                        {
+                            InlineKeyboardButton.WithCallbackData("Рестарт"),
+                        }
+                    });
+
+                    await Bot.SendTextMessageAsync(message.Chat.Id, "Что вы хотите сделать?", replyMarkup: inlineKeyboard2);
+                }
+            }
+
+            else if (callbackQuery.Data == "back")
+            {
+                startMenu();
+            }
+
+            else if (callbackQuery.Data == "Включить музыку" && musicFlag == false)
+            {
+                musicFlag = true;
+                await Bot.SendTextMessageAsync(message.Chat.Id, "Введи название песни:");
+                return;
+            }
+
+            else if (callbackQuery.Data == "Поменять фон раб. стола")
+            {
+                backgroundFlag = true;
+                await Bot.SendTextMessageAsync(message.Chat.Id, "Отправьте фото (как документ) и оно установиться на твоем рабочем столе.");
+            }
+        }
+
+        private void startMenu()
+        {
+            var inlineKeyboard = new InlineKeyboardMarkup(new[]
+            {
+                        new [] // first row
+                        {
+                            InlineKeyboardButton.WithCallbackData("Звук"),
+                            InlineKeyboardButton.WithCallbackData("Сост. машины"),
+                        },
+                        new [] // second row
+                        {
+                            InlineKeyboardButton.WithCallbackData("Поменять фон раб. стола"),
+                            InlineKeyboardButton.WithCallbackData("Включить музыку"),
+                        },
+                        new [] // second row
+                        {
+                            InlineKeyboardButton.WithCallbackData("Сделать скрин")
+                        }
+                    });
+
+            Bot.SendTextMessageAsync(message.Chat.Id, $"Здравствуй {message.Chat.FirstName},\n\r\n\r " +
+               $"я, {Text} готова к работе.\n\r\n\r" +
+               $"Вот что я могу:",
+               replyMarkup: inlineKeyboard);
+
         }
 
         private static void stateMachine(string Act)
@@ -125,7 +225,7 @@ namespace Rory_Mercury
             process.Start();
         }
 
-        private static async void SendPhotoAsync(string path)
+        private async void SendPhotoAsync(string path)
         {
             await Bot.SendChatActionAsync(message.Chat.Id, ChatAction.UploadPhoto);
             path.Split(Path.DirectorySeparatorChar).Last();
@@ -137,9 +237,10 @@ namespace Rory_Mercury
                     fileStream,
                     "Вот ваш скрин, Господин.");
             }
+            startMenu();
         }
 
-        private static void screenAsync(string path)
+        private void screenAsync(string path)
         {
             path += @"\\printscreen.jpg";
             Bitmap printscreen = new Bitmap(Screen.PrimaryScreen.Bounds.Width, Screen.PrimaryScreen.Bounds.Height);
