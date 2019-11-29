@@ -31,7 +31,6 @@ namespace Rory_Mercury
         //https://api.telegram.org/bot956177251:AAE65NwO-j2Rf8H_J70FiSew4gaCgOT0yyc/getUpdates
 
         private const int KEYEVENTF_EXTENTEDKEY = 1;
-        private const int KEYEVENTF_KEYUP = 0;
         private const int VK_MEDIA_NEXT_TRACK = 0xB0;
         private const int VK_MEDIA_PLAY_PAUSE = 0xB3;
         private const int VK_MEDIA_PREV_TRACK = 0xB1;
@@ -49,7 +48,7 @@ namespace Rory_Mercury
         public Main()
         {
             InitializeComponent();
-
+            
             WebClient webClient = new WebClient();
             Stream data = webClient.OpenRead("https://2ip.ru/");
             StreamReader reader = new StreamReader(data);
@@ -87,12 +86,12 @@ namespace Rory_Mercury
             //notifyIcon1.BalloonTipIcon = ToolTipIcon.Info;
             notifyIcon1.Icon = this.Icon;
             notifyIcon1.Visible = true;
-            notifyIcon1.ShowBalloonTip(1000);
+            notifyIcon1.ShowBalloonTip(700);
         }
 
         private void NI_BalloonTipClosed(Object sender, EventArgs e)
         {
-            notifyIcon1.Visible = false;
+            //notifyIcon1.Visible = false;
         }
 
         private async void BotOnMessageReceived(object sender, MessageEventArgs messageEventArgs)
@@ -390,6 +389,11 @@ namespace Rory_Mercury
 
             Bot.SendTextMessageAsync(ChatId, $" Мой Господин, ваш компьютер только что был выключен.\n " +
                 $"Ваш компьютер был в сети:   {str}");
+        }
+
+        private void exitToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            Application.Exit();
         }
     }
 }
