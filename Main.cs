@@ -395,5 +395,10 @@ namespace Rory_Mercury
         {
             Application.Exit();
         }
+
+        private void Main_Shown(object sender, EventArgs e)
+        {
+            Visible = false;
+        }
     }
 }
