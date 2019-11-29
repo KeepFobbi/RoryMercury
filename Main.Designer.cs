@@ -29,8 +29,10 @@
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Main));
             this.label1 = new System.Windows.Forms.Label();
             this.notifyIcon1 = new System.Windows.Forms.NotifyIcon(this.components);
+            this.button1 = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // label1
@@ -47,9 +49,20 @@
             // 
             // notifyIcon1
             // 
+            this.notifyIcon1.Icon = ((System.Drawing.Icon)(resources.GetObject("notifyIcon1.Icon")));
             this.notifyIcon1.Text = "KamikoBot";
             this.notifyIcon1.Visible = true;
             this.notifyIcon1.BalloonTipClosed += new System.EventHandler(this.NI_BalloonTipClosed);
+            // 
+            // button1
+            // 
+            this.button1.Location = new System.Drawing.Point(266, 245);
+            this.button1.Name = "button1";
+            this.button1.Size = new System.Drawing.Size(348, 37);
+            this.button1.TabIndex = 1;
+            this.button1.Text = "Test";
+            this.button1.UseVisualStyleBackColor = true;
+            this.button1.Click += new System.EventHandler(this.button1_Click);
             // 
             // Main
             // 
@@ -57,8 +70,11 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.Black;
             this.ClientSize = new System.Drawing.Size(971, 312);
+            this.Controls.Add(this.button1);
             this.Controls.Add(this.label1);
+            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Name = "Main";
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Main_FormClosing);
             this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.Form1_FormClosed);
             this.Load += new System.EventHandler(this.Main_Load);
             this.ResumeLayout(false);
@@ -70,6 +86,7 @@
 
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.NotifyIcon notifyIcon1;
+        private System.Windows.Forms.Button button1;
     }
 }
 

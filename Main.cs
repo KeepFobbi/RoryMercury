@@ -11,6 +11,7 @@ using System.Net;
 using System.Text.RegularExpressions;
 using Telegram.Bot.Types.ReplyMarkups;
 using System.Threading.Tasks;
+using System.Threading;
 
 namespace Rory_Mercury
 {
@@ -18,6 +19,7 @@ namespace Rory_Mercury
     {
         protected static readonly TelegramBotClient Bot = new TelegramBotClient("956177251:AAE65NwO-j2Rf8H_J70FiSew4gaCgOT0yyc");
         protected static Telegram.Bot.Types.Message message;
+        private static DateTime StartSession;
         private static string UserMessage;
         private static string globalPath;
         private static bool musicFlag = false;
@@ -28,6 +30,11 @@ namespace Rory_Mercury
 
         //https://api.telegram.org/bot956177251:AAE65NwO-j2Rf8H_J70FiSew4gaCgOT0yyc/getUpdates
 
+        private const int KEYEVENTF_EXTENTEDKEY = 1;
+        private const int KEYEVENTF_KEYUP = 0;
+        private const int VK_MEDIA_NEXT_TRACK = 0xB0;
+        private const int VK_MEDIA_PLAY_PAUSE = 0xB3;
+        private const int VK_MEDIA_PREV_TRACK = 0xB1;
         private const int APPCOMMAND_VOLUME_MUTE = 0x80000;
         private const int APPCOMMAND_VOLUME_UP = 0xA0000;
         private const int APPCOMMAND_VOLUME_DOWN = 0x90000;
@@ -35,6 +42,9 @@ namespace Rory_Mercury
 
         [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
         public static extern int SystemParametersInfo(int uAction, int uParam, string lpvParam, int fuWinIni);
+
+        [DllImport("user32.dll")]
+        public static extern void keybd_event(byte virtualKey, byte scanCode, uint flags, IntPtr extraInfo);
 
         public Main()
         {
@@ -57,9 +67,9 @@ namespace Rory_Mercury
             Bot.StartReceiving(Array.Empty<UpdateType>());
         }
 
-        private NotifyIcon NI = new NotifyIcon();
         private void Main_Load(object sender, EventArgs e)
         {
+            StartSession = DateTime.Now;
             if (File.Exists("states.txt"))
             {
                 using (FileStream fstream = File.OpenRead(path))
@@ -72,17 +82,17 @@ namespace Rory_Mercury
                 }
             }
 
-            NI.BalloonTipText = $"Ваш IP:  {globalIp[0].Value}";
-            NI.BalloonTipTitle = "Rory Mercury";
-            NI.BalloonTipIcon = ToolTipIcon.Info;
-            NI.Icon = this.Icon;
-            NI.Visible = true;
-            NI.ShowBalloonTip(1000);
+            notifyIcon1.BalloonTipText = $"Ваш IP:  {globalIp[0].Value}";
+            notifyIcon1.BalloonTipTitle = "Rory Mercury";
+            //notifyIcon1.BalloonTipIcon = ToolTipIcon.Info;
+            notifyIcon1.Icon = this.Icon;
+            notifyIcon1.Visible = true;
+            notifyIcon1.ShowBalloonTip(1000);
         }
 
         private void NI_BalloonTipClosed(Object sender, EventArgs e)
         {
-            NI.Visible = false;
+            notifyIcon1.Visible = false;
         }
 
         private async void BotOnMessageReceived(object sender, MessageEventArgs messageEventArgs)
@@ -95,7 +105,6 @@ namespace Rory_Mercury
             {
                 uploadPhotoDesktop(messageEventArgs);
                 backgroundFlag = false;
-                startMenu("main");
             }
             else if (message == null || type != MessageType.Text)
                 return;
@@ -132,10 +141,11 @@ namespace Rory_Mercury
 
         [DllImport("user32.dll")]
         public static extern IntPtr SendMessageW(IntPtr hWnd, int Msg, IntPtr wParam, IntPtr lParam);
-        private async void changeVolume(int APPCOMMAND_VOLUME)
+        private void changeVolume(int APPCOMMAND_VOLUME)
         {
             Form main = new Form();
             SendMessageW(main.Handle, WM_APPCOMMAND, main.Handle, (IntPtr)APPCOMMAND_VOLUME);
+            main.Close();
         }
 
         private async void BotOnCallbackQueryReceived(object sender, CallbackQueryEventArgs callbackQueryEventArgs)
@@ -207,6 +217,10 @@ namespace Rory_Mercury
                         new [] // second row
                         {
                             InlineKeyboardButton.WithCallbackData("Рестарт"),
+                        },
+                        new []
+                        {
+                            InlineKeyboardButton.WithCallbackData("back")
                         }
                     });
 
@@ -229,6 +243,21 @@ namespace Rory_Mercury
             {
                 backgroundFlag = true;
                 await Bot.SendTextMessageAsync(ChatId, "Отправьте фото (как документ) и оно установиться на твоем рабочем столе.");
+            }
+
+            else if (callbackQuery.Data == "\u23EA") // back
+            {
+                keybd_event(VK_MEDIA_PREV_TRACK, 0, KEYEVENTF_EXTENTEDKEY, IntPtr.Zero);
+            }
+
+            else if (callbackQuery.Data == "\u25B6") // pause/play
+            {
+                keybd_event(VK_MEDIA_PLAY_PAUSE, 0, KEYEVENTF_EXTENTEDKEY, IntPtr.Zero);
+            }
+
+            else if (callbackQuery.Data == "\u23E9") // next
+            {
+                keybd_event(VK_MEDIA_NEXT_TRACK, 0, KEYEVENTF_EXTENTEDKEY, IntPtr.Zero);
             }
         }
 
@@ -253,6 +282,12 @@ namespace Rory_Mercury
                         new [] // second row
                         {
                             InlineKeyboardButton.WithCallbackData("Сделать скрин")
+                        },
+                        new [] // second row
+                        {
+                            InlineKeyboardButton.WithCallbackData("\u23EA"),
+                            InlineKeyboardButton.WithCallbackData("\u25B6"),
+                            InlineKeyboardButton.WithCallbackData("\u23E9")
                         }
                     });
 
@@ -327,8 +362,34 @@ namespace Rory_Mercury
 
         private void Form1_FormClosed(object sender, FormClosedEventArgs e)
         {
+            Thread.Sleep(1000);
             Bot.StopReceiving();
             Application.Exit();
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            keybd_event(VK_MEDIA_PLAY_PAUSE, 0, KEYEVENTF_EXTENTEDKEY, IntPtr.Zero);
+        }
+
+        private void Main_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            this.Hide();
+            Thread.Sleep(1000);
+            TimeSpan span = DateTime.Now - StartSession;
+            string str;
+
+            if (span.Minutes <= 1)
+                str = $"{span.Seconds} c.";
+            else if (span.Hours <= 1)
+                str = $"{span.Minutes} м. {span.Seconds} c.";
+            else if (span.Days <= 1)
+                str = $"{span.Hours} ч. {span.Minutes} м. {span.Seconds} c.";
+            else
+                str = $"{span.Days} д. {span.Hours} ч. {span.Minutes} м. {span.Seconds} c.";
+
+            Bot.SendTextMessageAsync(ChatId, $" Мой Господин, ваш компьютер только что был выключен.\n " +
+                $"Ваш компьютер был в сети:   {str}");
         }
     }
 }
