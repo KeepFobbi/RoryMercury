@@ -22,23 +22,30 @@ namespace Rory_Mercury
         private static string globalPath;
         private static bool musicFlag = false;
         private static bool backgroundFlag = false;
+        private static MatchCollection globalIp;
+        private readonly string path = "states.txt";
+        private static long ChatId;
 
         //https://api.telegram.org/bot956177251:AAE65NwO-j2Rf8H_J70FiSew4gaCgOT0yyc/getUpdates
 
-        private static readonly int APPCOMMAND_VOLUME_MUTE = 0x80000;
-        private static readonly int APPCOMMAND_VOLUME_UP = 0xA0000;
-        private static readonly int APPCOMMAND_VOLUME_DOWN = 0x90000;
-        private static readonly int WM_APPCOMMAND = 0x319;
+        private const int APPCOMMAND_VOLUME_MUTE = 0x80000;
+        private const int APPCOMMAND_VOLUME_UP = 0xA0000;
+        private const int APPCOMMAND_VOLUME_DOWN = 0x90000;
+        private const int WM_APPCOMMAND = 0x319;
 
         [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
         public static extern int SystemParametersInfo(int uAction, int uParam, string lpvParam, int fuWinIni);
 
-        [DllImport("user32.dll")]
-        public static extern IntPtr SendMessageW(IntPtr hWnd, int Msg, IntPtr wParam, IntPtr lParam);
-
         public Main()
         {
             InitializeComponent();
+
+            WebClient webClient = new WebClient();
+            Stream data = webClient.OpenRead("https://2ip.ru/");
+            StreamReader reader = new StreamReader(data);
+            Regex regex = new Regex(@"([0-9]{1,3})\.([0-9]{1,3})\.([0-9]{1,3})\.([0-9]{1,3})");
+            globalIp = regex.Matches(reader.ReadToEnd());
+
             globalPath = AppDomain.CurrentDomain.BaseDirectory;
 
             this.Text = Bot.GetMeAsync().Result.Username;
@@ -50,31 +57,52 @@ namespace Rory_Mercury
             Bot.StartReceiving(Array.Empty<UpdateType>());
         }
 
+        private NotifyIcon NI = new NotifyIcon();
+        private void Main_Load(object sender, EventArgs e)
+        {
+            if (File.Exists("states.txt"))
+            {
+                using (FileStream fstream = File.OpenRead(path))
+                {
+                    byte[] array = new byte[fstream.Length];
+                    fstream.Read(array, 0, array.Length);
+                    string textFromFile = System.Text.Encoding.Default.GetString(array);
+                    ChatId = Convert.ToInt64(textFromFile);
+                    startMenu("start");
+                }
+            }
+
+            NI.BalloonTipText = $"Ваш IP:  {globalIp[0].Value}";
+            NI.BalloonTipTitle = "Rory Mercury";
+            NI.BalloonTipIcon = ToolTipIcon.Info;
+            NI.Icon = this.Icon;
+            NI.Visible = true;
+            NI.ShowBalloonTip(1000);
+        }
+
+        private void NI_BalloonTipClosed(Object sender, EventArgs e)
+        {
+            NI.Visible = false;
+        }
+
         private async void BotOnMessageReceived(object sender, MessageEventArgs messageEventArgs)
         {
             message = messageEventArgs.Message;
             MessageType type = message.Type;
+            ChatId = message.Chat.Id;
 
             if (type == MessageType.Document && backgroundFlag == true)
             {
                 uploadPhotoDesktop(messageEventArgs);
                 backgroundFlag = false;
-                startMenu();
+                startMenu("main");
             }
             else if (message == null || type != MessageType.Text)
                 return;
 
             UserMessage = message.Text;
 
-            if (UserMessage == "/start")
-            {
-                await Bot.SendChatActionAsync(message.Chat.Id, ChatAction.Typing);
-
-                await Task.Delay(500); // simulate longer running task
-
-                startMenu();
-            }
-            else if (musicFlag == true)
+            if (musicFlag == true)
             {
                 WebClient webClient = new WebClient();
                 Stream data = webClient.OpenRead("https://www.youtube.com/results?search_query=" + UserMessage.Replace(" ", "+"));
@@ -84,13 +112,37 @@ namespace Rory_Mercury
 
                 System.Diagnostics.Process.Start($"https://www.youtube.com{match[66].Groups[1]}");
                 musicFlag = false;
-                startMenu();
+                startMenu("main");
             }
+            if (message.Text == "/start")
+            {
+                await Bot.SendChatActionAsync(message.Chat.Id, ChatAction.Typing);
+                await Task.Delay(500); // simulate longer running task                
+
+                using (FileStream fstream = new FileStream(path, FileMode.OpenOrCreate))
+                {
+                    byte[] array = System.Text.Encoding.Default.GetBytes(message.Chat.Id.ToString());
+                    fstream.Write(array, 0, array.Length);
+                }
+
+                startMenu("start");
+            }
+
+        }
+
+        [DllImport("user32.dll")]
+        public static extern IntPtr SendMessageW(IntPtr hWnd, int Msg, IntPtr wParam, IntPtr lParam);
+        private async void changeVolume(int APPCOMMAND_VOLUME)
+        {
+            Form main = new Form();
+            SendMessageW(main.Handle, WM_APPCOMMAND, main.Handle, (IntPtr)APPCOMMAND_VOLUME);
         }
 
         private async void BotOnCallbackQueryReceived(object sender, CallbackQueryEventArgs callbackQueryEventArgs)
         {
             var callbackQuery = callbackQueryEventArgs.CallbackQuery;
+            message = callbackQueryEventArgs.CallbackQuery.Message;
+            ChatId = message.Chat.Id;
 
             //await Bot.AnswerCallbackQueryAsync(callbackQuery.Id, $"в процессе: '{callbackQuery.Data}'");
 
@@ -100,17 +152,17 @@ namespace Rory_Mercury
             {
                 Directory.CreateDirectory("Screen");
                 screenAsync(globalPath + "Screen");
-                startMenu();
+                startMenu("main");
             }
 
             else if (callbackQuery.Data == "Mute")
                 changeVolume(APPCOMMAND_VOLUME_MUTE);
 
             else if (callbackQuery.Data == "Добавить")
-                changeVolume(APPCOMMAND_VOLUME_UP);
+                changeVolume(APPCOMMAND_VOLUME_UP);              
 
             else if (callbackQuery.Data == "Убавить")
-                changeVolume(APPCOMMAND_VOLUME_DOWN);
+                changeVolume(APPCOMMAND_VOLUME_DOWN);             
 
             else if (callbackQuery.Data == "Выкл.")
                 stateMachine("-s");
@@ -120,11 +172,8 @@ namespace Rory_Mercury
 
             else if (callbackQuery.Data == "Звук")
             {
-
-                if (!Bot.DeleteMessageAsync(message.Chat.Id, message.MessageId + 1).IsCompleted)
-                {
-                    var inlineKeyboard = new InlineKeyboardMarkup(new[]
-                {
+                var inlineKeyboard = new InlineKeyboardMarkup(new[]
+            {
                         new [] // first row
                         {
                             InlineKeyboardButton.WithCallbackData("Добавить"),
@@ -143,17 +192,14 @@ namespace Rory_Mercury
                         }
                     });
 
-                    await Bot.SendTextMessageAsync(message.Chat.Id, "Что вы хотите сделать?", replyMarkup: inlineKeyboard);
-                }
+                await Bot.SendTextMessageAsync(ChatId, "Что вы хотите сделать?", replyMarkup: inlineKeyboard);
 
             }
 
             else if (callbackQuery.Data == "Сост. машины")
             {
-                if (!Bot.DeleteMessageAsync(message.Chat.Id, message.MessageId + 1).IsCompleted)
-                {
-                    var inlineKeyboard2 = new InlineKeyboardMarkup(new[]
-                {
+                var inlineKeyboard2 = new InlineKeyboardMarkup(new[]
+            {
                         new [] // first row
                         {
                             InlineKeyboardButton.WithCallbackData("Выкл."),
@@ -164,31 +210,34 @@ namespace Rory_Mercury
                         }
                     });
 
-                    await Bot.SendTextMessageAsync(message.Chat.Id, "Что вы хотите сделать?", replyMarkup: inlineKeyboard2);
-                }
+                await Bot.SendTextMessageAsync(ChatId, "Что вы хотите сделать?", replyMarkup: inlineKeyboard2);
             }
 
             else if (callbackQuery.Data == "back")
             {
-                startMenu();
+                startMenu("main");
             }
 
             else if (callbackQuery.Data == "Включить музыку" && musicFlag == false)
             {
                 musicFlag = true;
-                await Bot.SendTextMessageAsync(message.Chat.Id, "Введи название песни:");
+                await Bot.SendTextMessageAsync(ChatId, "Введи название песни:");
                 return;
             }
 
             else if (callbackQuery.Data == "Поменять фон раб. стола")
             {
                 backgroundFlag = true;
-                await Bot.SendTextMessageAsync(message.Chat.Id, "Отправьте фото (как документ) и оно установиться на твоем рабочем столе.");
+                await Bot.SendTextMessageAsync(ChatId, "Отправьте фото (как документ) и оно установиться на твоем рабочем столе.");
             }
         }
 
-        private void startMenu()
+        private async void startMenu(string menuPosition)
         {
+            await Bot.SendChatActionAsync(ChatId, ChatAction.Typing);
+
+            await Task.Delay(500); // simulate longer running task
+
             var inlineKeyboard = new InlineKeyboardMarkup(new[]
             {
                         new [] // first row
@@ -207,10 +256,21 @@ namespace Rory_Mercury
                         }
                     });
 
-            Bot.SendTextMessageAsync(message.Chat.Id, $"Здравствуй {message.Chat.FirstName},\n\r\n\r " +
-               $"я, {Text} готова к работе.\n\r\n\r" +
-               $"Вот что я могу:",
-               replyMarkup: inlineKeyboard);
+            if (menuPosition == "start")
+            {
+                await Bot.SendTextMessageAsync(ChatId, $" Мой Господин, ваш компьютер только что был запущен.\n " +
+                                    $"Ваш IP:  {globalIp[0].Value}\n " +
+                                    $"Напоминаю:  3389\n" +
+                                    $"    Хорошего дня  =)\n\n" +
+                                    $"Сегодня:   {DateTime.Now.ToLongDateString()}\n\n" +
+                                    $"Что я могу для Вас сделать?",
+                                    replyMarkup: inlineKeyboard);
+            }
+            else if (menuPosition == "main")
+            {
+                await Bot.SendTextMessageAsync(ChatId, $"Что я могу для Вас сделать?", replyMarkup: inlineKeyboard);
+            }
+
 
         }
 
@@ -237,7 +297,7 @@ namespace Rory_Mercury
                     fileStream,
                     "Вот ваш скрин, Господин.");
             }
-            startMenu();
+            startMenu("main");
         }
 
         private void screenAsync(string path)
@@ -249,11 +309,6 @@ namespace Rory_Mercury
             printscreen.Save(path, System.Drawing.Imaging.ImageFormat.Jpeg);
 
             SendPhotoAsync(path);
-        }
-
-        private void changeVolume(int APPCOMMAND_VOLUME)
-        {
-            SendMessageW(this.Handle, WM_APPCOMMAND, this.Handle, (IntPtr)APPCOMMAND_VOLUME);
         }
 
         public static async void uploadPhotoDesktop(MessageEventArgs messageEventArgs)

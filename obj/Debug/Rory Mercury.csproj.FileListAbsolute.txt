@@ -34,7 +34,6 @@ D:\Development\RoryMercury\obj\Debug\Rory Mercury.csprojAssemblyReference.cache
 D:\Development\RoryMercury\obj\Debug\Rory_Mercury.Main.resources
 D:\Development\RoryMercury\obj\Debug\Rory_Mercury.Properties.Resources.resources
 D:\Development\RoryMercury\obj\Debug\Rory Mercury.csproj.GenerateResource.cache
-D:\Development\RoryMercury\obj\Debug\Rory Mercury.csproj.CoreCompileInputs.cache
 D:\Development\RoryMercury\obj\Debug\Rory Mercury.exe
 D:\Development\RoryMercury\obj\Debug\Rory Mercury.pdb
 D:\Development\RoryMercury\bin\Debug\Rory Mercury.exe.config
