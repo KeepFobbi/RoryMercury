@@ -26,6 +26,7 @@ namespace Rory_Mercury
         private static string globalPath;
         private static bool musicFlag = false;
         private static bool cmdFlag = false;
+        private static bool chatFlag = false;
         private static bool backgroundFlag = false;
         private static MatchCollection globalIp;
         private readonly string path = "states.txt";
@@ -80,6 +81,7 @@ namespace Rory_Mercury
                     fstream.Read(array, 0, array.Length);
                     string textFromFile = System.Text.Encoding.Default.GetString(array);
                     ChatId = Convert.ToInt64(textFromFile);
+                    label5.Text = ChatId.ToString();
                     startMenu("start");
                 }
             }
@@ -153,28 +155,15 @@ namespace Rory_Mercury
                 process.StandardInput.WriteLine("cls");
                 process.StandardInput.Flush();
             }
-            if (message.Text == "/cmd")
+            if (chatFlag)
             {
-                process.StartInfo.CreateNoWindow = true;
-                process.StartInfo.UseShellExecute = false;
-                process.StartInfo.RedirectStandardOutput = true;
-                process.StartInfo.RedirectStandardError = true;
-                process.StartInfo.WorkingDirectory = @"C:\";
-                process.StartInfo.FileName = Path.Combine(Environment.SystemDirectory, "cmd.exe");
-
-
-                process.StartInfo.RedirectStandardInput = true;
-
-                process.OutputDataReceived += ProcessOutputDataHandler;
-                process.ErrorDataReceived += ProcessErrorDataHandler;
-
-                process.Start();
-
-                process.BeginOutputReadLine();
-                process.BeginErrorReadLine();
-
-                cmdFlag = true;
-                return;
+                richTextBox1.Text += $"{message.Chat.FirstName}:\n\t" + message.Text + "\n";
+            }
+            if (message.Text == "/menu")
+            {
+                startMenu("main");
+                chatFlag = cmdFlag = musicFlag = false;
+                Visible = false;
             }
         }
 
@@ -219,6 +208,36 @@ namespace Rory_Mercury
             else if (callbackQuery.Data == "Рестарт")
                 stateMachine("-r");
 
+            else if (callbackQuery.Data == "Cmd")
+            {
+                process.StartInfo.CreateNoWindow = true;
+                process.StartInfo.UseShellExecute = false;
+                process.StartInfo.RedirectStandardOutput = true;
+                process.StartInfo.RedirectStandardError = true;
+                process.StartInfo.WorkingDirectory = @"C:\";
+                process.StartInfo.FileName = Path.Combine(Environment.SystemDirectory, "cmd.exe");
+
+
+                process.StartInfo.RedirectStandardInput = true;
+
+                process.OutputDataReceived += ProcessOutputDataHandler;
+                process.ErrorDataReceived += ProcessErrorDataHandler;
+
+                process.Start();
+
+                process.BeginOutputReadLine();
+                process.BeginErrorReadLine();
+
+                cmdFlag = true;
+                return;
+            }
+
+            else if (callbackQuery.Data == "Chat")
+            {
+                Visible = Visible ? false : true;
+                chatFlag = true;
+            }
+
             else if (callbackQuery.Data == "Звук")
             {
                 var inlineKeyboard = new InlineKeyboardMarkup(new[]
@@ -252,10 +271,12 @@ namespace Rory_Mercury
                         new [] // first row
                         {
                             InlineKeyboardButton.WithCallbackData("Выкл."),
+                            InlineKeyboardButton.WithCallbackData("Рестарт")
                         },
                         new [] // second row
                         {
-                            InlineKeyboardButton.WithCallbackData("Рестарт"),
+                            InlineKeyboardButton.WithCallbackData("Cmd"),
+                            InlineKeyboardButton.WithCallbackData("Chat"),
                         },
                         new []
                         {
@@ -344,8 +365,6 @@ namespace Rory_Mercury
             {
                 await Bot.SendTextMessageAsync(ChatId, $"Что я могу для Вас сделать?", replyMarkup: inlineKeyboard);
             }
-
-
         }
 
         public static void ProcessOutputDataHandler(object sendingProcess, DataReceivedEventArgs outLine)
@@ -421,11 +440,6 @@ namespace Rory_Mercury
             Application.Exit();
         }
 
-        private void button1_Click(object sender, EventArgs e)
-        {
-            keybd_event(VK_MEDIA_PLAY_PAUSE, 0, KEYEVENTF_EXTENTEDKEY, IntPtr.Zero);
-        }
-
         private void Main_FormClosing(object sender, FormClosingEventArgs e)
         {
             this.Hide();
@@ -454,6 +468,80 @@ namespace Rory_Mercury
         private void Main_Shown(object sender, EventArgs e)
         {
             Visible = false;
+        }
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            Visible = false;
+        }
+
+        private void button3_Click(object sender, EventArgs e)
+        {
+            Visible = false;
+            notifyIcon1.BalloonTipText = $"Окно свернуто.\nНажмите на иконку два раза чтобы розвернуть.";
+            notifyIcon1.ShowBalloonTip(1000);
+        }
+
+        private void notifyIcon1_MouseDoubleClick(object sender, MouseEventArgs e)
+        {
+            Visible = Visible ? false : true;
+        }
+
+        private void chatToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            Visible = Visible ? false : true;
+            chatFlag = true;
+        }
+
+        private Point mouseOffset;
+        private bool isMouseDown = false;
+
+        private void Form1_MouseDown(object sender, MouseEventArgs e)
+        {
+            int xOffset;
+            int yOffset;
+
+            if (e.Button == MouseButtons.Left)
+            {
+                xOffset = -e.X - SystemInformation.FrameBorderSize.Width;
+                yOffset = -e.Y - SystemInformation.CaptionHeight -
+                    SystemInformation.FrameBorderSize.Height;
+                mouseOffset = new Point(xOffset, yOffset);
+                isMouseDown = true;
+            }
+        }
+
+        private void Form1_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (isMouseDown)
+            {
+                Point mousePos = Control.MousePosition;
+                mousePos.Offset(mouseOffset.X, mouseOffset.Y);
+                Location = mousePos;
+            }
+        }
+
+        private void Form1_MouseUp(object sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Left)
+            {
+                isMouseDown = false;
+            }
+        }
+
+        private void Send_Click(object sender, EventArgs e)
+        {
+            Bot.SendTextMessageAsync(ChatId, richTextBox2.Text);
+            richTextBox1.Text += "User:\n\t" + richTextBox2.Text + "\n";
+            richTextBox2.Clear();
+        }
+
+        private void Main_VisibleChanged(object sender, EventArgs e)
+        {
+            if (Visible)
+                Bot.SendTextMessageAsync(ChatId, "Чат включен.");
+            else
+                Bot.SendTextMessageAsync(ChatId, "Чат выключен.");
         }
     }
 }
