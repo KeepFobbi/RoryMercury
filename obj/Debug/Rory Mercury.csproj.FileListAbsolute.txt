@@ -44,3 +44,4 @@ D:\Development\RoryMercury\bin\Debug\Telegram.Bot.dll
 D:\Development\RoryMercury\bin\Debug\Newtonsoft.Json.xml
 D:\Development\RoryMercury\bin\Debug\Telegram.Bot.xml
 D:\Development\RoryMercury\obj\Debug\Rory Mercury.csproj.CopyComplete
+D:\Development\RoryMercury\obj\Debug\Rory Mercury.csproj.CoreCompileInputs.cache
